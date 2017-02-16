@@ -35,7 +35,7 @@ gts, res = loadDat.readJson(refName, candName)
 # In[3]:
 
 # calculate cider scores
-scorer = ciderEval(gts, res, df_mode)
+scorer = ciderEval(gts, res, 'corpus')
 # scores: dict of list with key = metric and value = score given to each
 # candidate
 scores = scorer.evaluate()
