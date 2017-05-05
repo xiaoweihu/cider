@@ -63,9 +63,7 @@ class CiderScorer(object):
         self.crefs = []
         self.ctest = []
         self.df_mode = df_mode
-        if self.df_mode == "corpus":
-            self.document_frequency = defaultdict(float)
-        else:
+        if self.df_mode != "corpus":
             self.document_frequency = pickle.load(open(os.path.join('data', df_mode + '.p'),'r'))       
         self.cook_append(test, refs)
         self.ref_len = None
@@ -194,6 +192,7 @@ class CiderScorer(object):
     def compute_score(self, option=None, verbose=0):
         # compute idf
         if self.df_mode == "corpus":
+            self.document_frequency = defaultdict(float)
             self.compute_doc_freq()
             # assert to check document frequency
             assert(len(self.ctest) >= max(self.document_frequency.values()))

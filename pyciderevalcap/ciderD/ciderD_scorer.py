@@ -64,9 +64,7 @@ class CiderScorer(object):
         self.crefs = []
         self.ctest = []
         self.df_mode = df_mode
-        if self.df_mode == "corpus":
-            self.document_frequency = defaultdict(float)
-        else:
+        if self.df_mode != "corpus":
             self.document_frequency = pickle.load(open(os.path.join('data', df_mode + '.p'),'r'))       
         self.cook_append(test, refs)
         self.ref_len = None
@@ -171,9 +169,15 @@ class CiderScorer(object):
         # compute log reference length
         if self.df_mode == "corpus":
             self.ref_len = np.log(float(len(self.crefs)))
-        elif self.df_mode == "coco-val":
+        #elif self.df_mode == "coco-val":
             # if coco option selected, use length of coco-val set
-            self.ref_len = np.log(float(40504))
+        #    self.ref_len = np.log(float(40504))
+        elif 'coco-all' in self.df_mode:
+            self.ref_len = np.log(float(123287))
+        elif 'coco-train' in self.df_mode:
+            self.ref_len = np.log(float(113287))
+        elif 'coco-val' in self.df_mode:
+            self.ref_len = np.log(float(5000))
 
         scores = []
         for test, refs in zip(self.ctest, self.crefs):
@@ -197,6 +201,7 @@ class CiderScorer(object):
     def compute_score(self, option=None, verbose=0):
         # compute idf
         if self.df_mode == "corpus":
+            self.document_frequency = defaultdict(float)
             self.compute_doc_freq()
             # assert to check document frequency
             assert(len(self.ctest) >= max(self.document_frequency.values()))
