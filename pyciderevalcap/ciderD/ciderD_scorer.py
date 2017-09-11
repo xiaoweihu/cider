@@ -64,10 +64,12 @@ class CiderScorer(object):
         self.crefs = []
         self.ctest = []
         self.df_mode = df_mode
-        if self.df_mode != "corpus":
-            self.document_frequency = pickle.load(open(os.path.join('data', df_mode + '.p'),'r'))       
-        self.cook_append(test, refs)
         self.ref_len = None
+        if self.df_mode != "corpus":
+            pkl_file = pickle.load(open(os.path.join('data', df_mode + '.p'),'r'))
+            self.ref_len = pkl_file['ref_len']
+            self.document_frequency = pkl_file['document_frequency']
+        self.cook_append(test, refs)
     
     def clear(self):
         self.crefs = []
@@ -172,12 +174,6 @@ class CiderScorer(object):
         #elif self.df_mode == "coco-val":
             # if coco option selected, use length of coco-val set
         #    self.ref_len = np.log(float(40504))
-        elif 'coco-all' in self.df_mode:
-            self.ref_len = np.log(float(123287))
-        elif 'coco-train' in self.df_mode:
-            self.ref_len = np.log(float(113287))
-        elif 'coco-val' in self.df_mode:
-            self.ref_len = np.log(float(5000))
 
         scores = []
         for test, refs in zip(self.ctest, self.crefs):
