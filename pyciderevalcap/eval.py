@@ -1,4 +1,9 @@
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
+
 __author__ = 'rama'
+
 from .tokenizer.ptbtokenizer import PTBTokenizer
 from .cider.cider import Cider
 from .ciderD.ciderD import CiderD

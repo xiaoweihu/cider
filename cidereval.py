@@ -1,8 +1,10 @@
 # coding: utf-8
 
 # In[1]:
-
 # demo script for running CIDEr
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
 import json
 from pydataformat.loadData import LoadData
 from pyciderevalcap.eval import CIDErEvalCap as ciderEval

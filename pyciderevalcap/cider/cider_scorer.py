@@ -1,6 +1,9 @@
 #!/usr/bin/env python
 # Tsung-Yi Lin <tl483@cornell.edu>
 # Ramakrishna Vedantam <vrama91@vt.edu>
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
 
 import copy
 import pickle
@@ -64,7 +67,7 @@ class CiderScorer(object):
         self.ctest = []
         self.df_mode = df_mode
         if self.df_mode != "corpus":
-            self.document_frequency = pickle.load(open(os.path.join('data', df_mode + '.p'),'r'))       
+            self.document_frequency = pickle.load(open(os.path.join('data', df_mode + '.p'),'rb'), encoding='latin1')       
         self.cook_append(test, refs)
         self.ref_len = None
     
