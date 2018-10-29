@@ -6,7 +6,8 @@ from __future__ import division
 from __future__ import print_function
 
 import copy
-import pickle
+import six
+from six.moves import cPickle
 from collections import defaultdict
 import numpy as np
 import math
@@ -67,7 +68,7 @@ class CiderScorer(object):
         self.ctest = []
         self.df_mode = df_mode
         if self.df_mode != "corpus":
-            self.document_frequency = pickle.load(open(os.path.join('data', df_mode + '.p'),'rb'), encoding='latin1')       
+            self.document_frequency = cPickle.load(open(os.path.join('data', df_mode + '.p'),'rb'), **(dict(encoding='latin1') if six.PY3 else {}))
         self.cook_append(test, refs)
         self.ref_len = None
     

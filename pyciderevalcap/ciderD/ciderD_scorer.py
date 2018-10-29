@@ -10,7 +10,8 @@ from collections import defaultdict
 import numpy as np
 import pdb
 import math
-import pickle
+import six
+from six.moves import cPickle
 import os
 
 def precook(s, n=4, out=False):
@@ -69,7 +70,7 @@ class CiderScorer(object):
         self.df_mode = df_mode
         self.ref_len = None
         if self.df_mode != "corpus":
-            pkl_file = pickle.load(open(os.path.join('data', df_mode + '.p'),'rb'), encoding='latin1')
+            pkl_file = cPickle.load(open(os.path.join('data', df_mode + '.p'),'rb'), **(dict(encoding='latin1') if six.PY3 else {}))
             self.ref_len = np.log(float(pkl_file['ref_len']))
             self.document_frequency = pkl_file['document_frequency']
         self.cook_append(test, refs)
