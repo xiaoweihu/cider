@@ -43,7 +43,8 @@ class Cider:
         """
 
         # clear all the previous hypos and refs
-        self.cider_scorer.clear()
+        tmp_cider_scorer = self.cider_scorer.copy_empty()
+        tmp_cider_scorer.clear()
 
         for res_id in res:
 
@@ -55,9 +56,9 @@ class Cider:
             assert(len(hypo) == 1)
             assert(type(ref) is list)
             assert(len(ref) > 0)
-            self.cider_scorer += (hypo[0], ref)
+            tmp_cider_scorer += (hypo[0], ref)
 
-        (score, scores) = self.cider_scorer.compute_score()
+        (score, scores) = tmp_cider_scorer.compute_score()
 
         return score, scores
 

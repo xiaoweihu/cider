@@ -60,6 +60,13 @@ class CiderScorer(object):
         new.crefs = copy.copy(self.crefs)
         return new
 
+    def copy_empty(self):
+        new = CiderScorer(df_mode="corpus", n=self.n, sigma=self.sigma)
+        new.df_mode = self.df_mode
+        new.ref_len = self.ref_len
+        new.document_frequency = self.document_frequency
+        return new
+
     def __init__(self, df_mode="corpus", test=None, refs=None, n=4, sigma=6.0):
         ''' singular instance '''
         self.n = n
