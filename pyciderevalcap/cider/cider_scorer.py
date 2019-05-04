@@ -49,6 +49,31 @@ def cook_test(test, n=4):
     '''
     return precook(test, n, True)
 
+def sim(vec_hyp, vec_ref, norm_hyp, norm_ref, length_hyp, length_ref, n=4):
+    '''
+    Compute the cosine similarity of two vectors.
+    :param vec_hyp: array of dictionary for vector corresponding to hypothesis
+    :param vec_ref: array of dictionary for vector corresponding to reference
+    :param norm_hyp: array of float for vector corresponding to hypothesis
+    :param norm_ref: array of float for vector corresponding to reference
+    :param length_hyp: int containing length of hypothesis
+    :param length_ref: int containing length of reference
+    :return: array of score for each n-grams cosine similarity
+    '''
+    delta = float(length_hyp - length_ref)
+    # measure consine similarity
+    val = np.array([0.0 for _ in range(n)])
+    for n in range(n):
+        # ngram
+        for (ngram,count) in vec_hyp[n].items():
+            val[n] += vec_hyp[n][ngram] * vec_ref[n][ngram]
+
+        if (norm_hyp[n] != 0) and (norm_ref[n] != 0):
+            val[n] /= (norm_hyp[n]*norm_ref[n])
+
+        assert(not math.isnan(val[n]))
+    return val
+
 class CiderScorer(object):
     """CIDEr scorer.
     """
@@ -75,6 +100,7 @@ class CiderScorer(object):
         self.ctest = []
         self.df_mode = df_mode
         self.ref_len = None
+        self.document_frequency = defaultdict(float)
         if self.df_mode != "corpus":
             pkl_file = cPickle.load(open(os.path.join('data', df_mode + '.p'),'rb'), **(dict(encoding='latin1') if six.PY3 else {}))
             self.ref_len = np.log(float(pkl_file['ref_len']))
@@ -123,58 +149,34 @@ class CiderScorer(object):
                 self.document_frequency[ngram] += 1
             # maxcounts[ngram] = max(maxcounts.get(ngram,0), count)
 
+    def counts2vec(self, cnts):
+        """
+        Function maps counts of ngram to vector of tfidf weights.
+        The function returns vec, an array of dictionary that store mapping of n-gram and tf-idf weights.
+        The n-th entry of array denotes length of n-grams.
+        :param cnts:
+        :return: vec (array of dict), norm (array of float), length (int)
+        """
+        vec = [defaultdict(float) for _ in range(self.n)]
+        length = 0
+        norm = [0.0 for _ in range(self.n)]
+        for (ngram,term_freq) in cnts.items():
+            # give word count 1 if it doesn't appear in reference corpus
+            df = np.log(max(1.0, self.document_frequency[ngram]))
+            # ngram index
+            n = len(ngram)-1
+            # tf (term_freq) * idf (precomputed idf) for n-grams
+            vec[n][ngram] = float(term_freq)*(self.ref_len - df)
+            # compute norm for the vector.  the norm will be used for
+            # computing similarity
+            norm[n] += pow(vec[n][ngram], 2)
+
+            if n == 1:
+                length += term_freq
+        norm = [np.sqrt(n) for n in norm]
+        return vec, norm, length
+
     def compute_cider(self):
-        def counts2vec(cnts):
-            """
-            Function maps counts of ngram to vector of tfidf weights.
-            The function returns vec, an array of dictionary that store mapping of n-gram and tf-idf weights.
-            The n-th entry of array denotes length of n-grams.
-            :param cnts:
-            :return: vec (array of dict), norm (array of float), length (int)
-            """
-            vec = [defaultdict(float) for _ in range(self.n)]
-            length = 0
-            norm = [0.0 for _ in range(self.n)]
-            for (ngram,term_freq) in cnts.items():
-                # give word count 1 if it doesn't appear in reference corpus
-                df = np.log(max(1.0, self.document_frequency[ngram]))
-                # ngram index
-                n = len(ngram)-1
-                # tf (term_freq) * idf (precomputed idf) for n-grams
-                vec[n][ngram] = float(term_freq)*(self.ref_len - df)
-                # compute norm for the vector.  the norm will be used for
-                # computing similarity
-                norm[n] += pow(vec[n][ngram], 2)
-
-                if n == 1:
-                    length += term_freq
-            norm = [np.sqrt(n) for n in norm]
-            return vec, norm, length
-
-        def sim(vec_hyp, vec_ref, norm_hyp, norm_ref, length_hyp, length_ref):
-            '''
-            Compute the cosine similarity of two vectors.
-            :param vec_hyp: array of dictionary for vector corresponding to hypothesis
-            :param vec_ref: array of dictionary for vector corresponding to reference
-            :param norm_hyp: array of float for vector corresponding to hypothesis
-            :param norm_ref: array of float for vector corresponding to reference
-            :param length_hyp: int containing length of hypothesis
-            :param length_ref: int containing length of reference
-            :return: array of score for each n-grams cosine similarity
-            '''
-            delta = float(length_hyp - length_ref)
-            # measure consine similarity
-            val = np.array([0.0 for _ in range(self.n)])
-            for n in range(self.n):
-                # ngram
-                for (ngram,count) in vec_hyp[n].items():
-                    val[n] += vec_hyp[n][ngram] * vec_ref[n][ngram]
-
-                if (norm_hyp[n] != 0) and (norm_ref[n] != 0):
-                    val[n] /= (norm_hyp[n]*norm_ref[n])
-
-                assert(not math.isnan(val[n]))
-            return val
 
         # compute log reference length
         if self.df_mode == "corpus":
@@ -183,12 +185,12 @@ class CiderScorer(object):
         scores = []
         for test, refs in zip(self.ctest, self.crefs):
             # compute vector for test captions
-            vec, norm, length = counts2vec(test)
+            vec, norm, length = self.counts2vec(test)
             # compute vector for ref captions
             score = np.array([0.0 for _ in range(self.n)])
             for ref in refs:
-                vec_ref, norm_ref, length_ref = counts2vec(ref)
-                score += sim(vec, vec_ref, norm, norm_ref, length, length_ref)
+                vec_ref, norm_ref, length_ref = self.counts2vec(ref)
+                score += sim(vec, vec_ref, norm, norm_ref, length, length_ref, self.n)
             # change by vrama91 - mean of ngram scores, instead of sum
             score_avg = np.mean(score)
             # divide by number of references
@@ -212,3 +214,42 @@ class CiderScorer(object):
         # debug
         # print score
         return np.mean(np.array(score)), np.array(score)
+
+    def my_get_cider(self, gts, res):
+
+        crefs = [precook(_, self.n) for _ in gts]
+        ctest = [precook(_, self.n) for _ in res]
+
+        assert self.ref_len is not None
+
+        scores = np.zeros((len(ctest), len(crefs), self.n))
+
+        for tid, test in enumerate(ctest):
+            vec, norm, length = self.counts2vec(test)
+            for rid, ref in enumerate(crefs):
+                vec_ref, norm_ref, length_ref = self.counts2vec(ref)
+                scores[tid, rid] += sim(vec, vec_ref, norm, norm_ref, length, length_ref, self.n)
+
+        scores = np.mean(scores, -1)
+        scores *= 10.0
+
+        return scores
+
+    def my_get_self_cider(self, res):
+
+        ctest = [self.counts2vec(precook(_, self.n)) for _ in res]
+
+        assert self.ref_len is not None
+
+        scores = np.zeros((len(res), len(res), self.n))
+
+        for tid, test in enumerate(ctest):
+            vec, norm, length = test
+            for rid, ref in enumerate(ctest):
+                vec_ref, norm_ref, length_ref = ref
+                scores[tid, rid] += sim(vec, vec_ref, norm, norm_ref, length, length_ref, self.n)
+
+        scores = np.mean(scores, -1)
+        scores *= 10.0
+
+        return scores

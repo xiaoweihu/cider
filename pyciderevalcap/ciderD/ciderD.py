@@ -12,6 +12,7 @@ from __future__ import print_function
 
 from .ciderD_scorer import CiderScorer
 import pdb
+import numpy as np
 
 class CiderD:
     """
@@ -53,6 +54,50 @@ class CiderD:
         (score, scores) = tmp_cider_scorer.compute_score()
 
         return score, scores
+
+    def my_compute_score(self, gts, res, avg_refs=True):
+        """
+        res a list of list
+        gts a list of list
+        """
+
+        # clear all the previous hypos and refs
+        tmp_cider_scorer = self.cider_scorer.copy_empty()
+        tmp_cider_scorer.clear()
+
+        scores = []
+        for _gts, _res in zip(gts, res):
+
+            tmp = tmp_cider_scorer.my_get_cider(_gts, _res)
+            if avg_refs:
+                tmp = np.mean(tmp, 1)
+            else:
+                tmp = np.mean(tmp, 1)
+            scores.append(tmp)
+
+        scores = np.array(scores)
+        score = np.mean(scores)
+
+        return score, scores
+
+    def my_self_cider(self, res):
+        """
+        gts a list of list
+        """
+
+        # clear all the previous hypos and refs
+        tmp_cider_scorer = self.cider_scorer.copy_empty()
+        tmp_cider_scorer.clear()
+
+        scores = []
+        for  _res in res:
+
+            tmp = tmp_cider_scorer.my_get_self_cider(_res)
+            scores.append(tmp)
+
+        return scores
+
+
 
     def method(self):
         return "CIDEr-D"
