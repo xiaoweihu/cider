@@ -80,6 +80,8 @@ class CiderScorer(object):
             pkl_file = cPickle.load(open(df_mode,'rb'), **(dict(encoding='latin1') if six.PY3 else {}))
             self.ref_len = np.log(float(pkl_file['ref_len']))
             self.document_frequency = pkl_file['document_frequency']
+        else:
+            self.document_frequency = None
         self.cook_append(test, refs)
     
     def clear(self):
